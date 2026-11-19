@@ -18,6 +18,10 @@
 git submodule update --init -- .agents/skills/souldesk-widget
 ```
 
-> $souldesk-widget 在组件广场创建一个本地倒计时，生成 ZIP，并在 SoulDesk 的隔离实例里验证导入。
+> $souldesk-widget 在组件广场创建一个色值换算器，输入 HEX 后显示 RGB，生成 ZIP，并在 SoulDesk 的隔离实例里验证导入。
 
 变更工作流后验证两个仓库的入口，再由宿主更新固定的 Skill 提交。
+
+## 设计参考
+
+早期工作流参考了 [WidgetJS 组件开发 Skill](https://github.com/widget-js/skills/blob/master/widget/SKILL.md) 和 [Kepo 插件开发 Skill](https://github.com/Enivel/kepo-plugin-dev-skill/blob/main/skills/kepo-plugin-dev/SKILL.md)。当前工作流以 SoulDesk 宿主 SDK、广场构建脚本和本项目的验收流程为依据。

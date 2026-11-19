@@ -1,27 +1,28 @@
 ---
 name: souldesk-widget
-description: 根据需求创建、修改、打包或本地验证 SoulDesk 桌面组件。适用于在组件广场开发正式组件，或在宿主平台验证组件接口及原型。
+description: 创建、维护、打包和隔离验证 SoulDesk 桌面组件。适用于组件广场开发、既有组件升级，以及验证宿主 SDK 的组件原型和协议夹具。
 ---
 
 # SoulDesk 组件开发
 
-## 确定工作目录
+## 找到任务所属仓库
 
-- 组件创建、维护及广场收录默认从同时包含 `sdk.lock.json`、`scripts/widget.py` 和 `widgets/` 的组件广场仓库进行。找到项目中已关联的广场目录，并从该目录执行构建、检查和 Git 操作。
-- 宿主平台负责 SDK、能力网关与安装验证。任务明确要求宿主接口、原型或夹具时，从同时包含 `sdk/README.md` 和 `src-tauri/` 的宿主仓库工作。独立 Skill 仓库维护本工作流。
-- 同时涉及多个仓库时，按实际任务决定变更范围。核对目标仓库的 `AGENTS.md`、`README.md` 和 Git 状态。
+- 正式组件默认在组件广场开发，以同一根目录下的 `widgets/`、`sdk.lock.json` 和 `scripts/widget.py` 确认仓库。组件目录为 `widgets/<目录>/`，包含 `manifest.json`、`src/`、`README.md` 和 `CHANGELOG.md`。
+- 宿主仓库以 `sdk/README.md` 和 `src-tauri/` 确认，维护 SDK、权限、运行时和桌面隔离验收。验证宿主接口的原型可从 `tests/fixtures/` 中选同类夹具参考。
+- 独立 Skill 仓库维护本文件，宿主通过 `.agents/skills/souldesk-widget/` 接入。按工作区实际路径定位各仓库，从所属仓库根目录执行命令。先核对其 Git 状态、`AGENTS.md` 和 `README.md`。
 
-## 创建和维护组件
+## 创建或更新组件
 
-1. 从需求提取显示内容、操作、数据来源和持久化。用现有组件确认目录和交互做法，已有组件保持 ID、配置和实例数据兼容。原型可参考宿主的协议夹具。使用第三方代码或资产时核对固定来源和许可。
-2. 阅读宿主 SDK 契约及所需能力，按目标宿主版本核对支持范围。广场以 `sdk.lock.json` 固定的 SDK 构建；新能力需确认宿主实现及最低兼容版本。只声明实际使用的权限，选择尽量少的依赖。
-3. 新包使用稳定 ID、数字版本、`hostApiMajor: 1`、`loadCheck: 1` 和 `dist/` 下的入口。使用相对资源、外部脚本和 SDK 消息桥。完成初始化再调用 `host.ready()`；隐藏试加载用隔离数据，默认页面无需外部服务即可就绪。写入等待宿主确认，失败保留草稿。已导入的同 ID 包内容有变化时升版。
+1. 从需求确定界面操作、数据来源、实例存储及目标宿主版本。简单组件可参考广场的 `widgets/local-clock/` 或 `widgets/daily-note/`。维护迁入组件时先确认源码归属。若资源由 `source/widgetjs-port/` 生成，按该目录的 README 修改源文件并重建，再更新对应的 `widgets/<目录>/src/`。
+2. 以宿主 `sdk/README.md` 和目标版本实现核对接口、权限及组件身份限制。广场以 `sdk.lock.json` 构建，构建器注入并校验 `host.js`。组件通过 SDK 消息桥调用宿主，只声明实际需要的能力。若需求超出已有宿主能力，将宿主扩展和升级要求纳入任务范围确认。
+3. 新包使用稳定 ID、数字版本、`schemaVersion: 1`、`hostApiMajor: 1`、`loadCheck: 1` 和 `dist/` 下的 HTML 入口。使用相对资源与外部脚本，按 SDK 约定配置尺寸和默认值。先初始化本地界面，再 `await host.ready()`。在 `host.preview` 为真时跳过真实网络和有副作用的操作，让隐藏试加载可独立完成。
+4. 更新既有包时保留 ID，保证旧实例配置和存储可读。包内容变化时提高版本并更新 `CHANGELOG.md`。保存成功以宿主响应为准，失败保留用户输入。复用第三方代码或资产时核对固定来源与分发许可。
 
-## 打包和验证
+## 打包和隔离验证
 
-- 广场源码位于 `widgets/<目录>/`，资源在 `src/`。从广场根目录运行 `python scripts/widget.py <目录>`，按广场 README 检查 ZIP、SHA-256 及发布说明。
-- 宿主原型的平铺 HTML/CSS/JS 源码可从宿主根目录运行 `node scripts/build-example.mjs <源码目录>`，从 `artifacts/` 取包。宿主专用测试入口见宿主 README。
-- 本地导入优先使用隔离宿主。在管理窗口「导入本地 ZIP」后从组件库添加，验证一条主要操作、重开恢复和适用的实例隔离。区分构建、隐藏试加载、可见实例和已安装宿主实测。
-- 上架时走广场现有的 Release 及目录签名流程，仅对已验收且许可允许分发的 ZIP 填写最低宿主版本及 SHA-256。打包、导入请求的交付内容包括源码、ZIP 和实际验证结论。
+- **正式组件**从广场根目录运行 `python scripts/widget.py <目录>`，在 `artifacts/widgets/` 查看 ZIP、SHA-256 和发布说明。离线构建可传 `--sdk <host.js路径>`，脚本会与锁定摘要核对。
+- **宿主原型**从宿主根目录运行 `node scripts/build-example.mjs <源码目录>`。此入口适用于平铺的 HTML/CSS/JS 和清单，使用当前宿主 SDK，产出位于宿主的 `artifacts/`。
+- **本地验证**从宿主根目录运行 `pnpm dev`，使用默认隔离数据。通过管理窗口「导入本地 ZIP」，再从组件库添加可见实例。验证主要操作、重开恢复，以及适用的多实例隔离或带数据升版。安装版验证按宿主 README 选择对应入口。
+- **上架**按广场 README 核验许可、实际验收的 ZIP 与最低宿主版本，再走 Release 和签名目录流程。提交、推送与发布均按用户明确授权执行。
 
-流程参考 [WidgetJS 的组件开发 Skill](https://github.com/widget-js/skills/tree/master/widget) 和 [Kepo 的插件开发 Skill](https://github.com/Enivel/kepo-plugin-dev-skill/tree/main/skills/kepo-plugin-dev)。
+交付时给出组件源码位置及生成的 ZIP 和 SHA-256。报告实际验证的宿主版本和范围，区分打包、隐藏试加载、可见实例交互和安装版实测。

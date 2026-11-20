@@ -24,6 +24,16 @@ description: 设计、创建、维护、打包和隔离验证 SoulDesk 桌面组
 3. 新包使用稳定 ID、数字版本、`schemaVersion: 1`、`hostApiMajor: 1`、`loadCheck: 1` 和 `dist/` 下的 HTML 入口。使用相对资源与外部脚本，按 SDK 约定配置尺寸和默认值。先初始化本地界面，再 `await host.ready()`。在 `host.preview` 为真时跳过真实网络和有副作用的操作，让隐藏试加载可独立完成。
 4. 更新既有包时保留 ID，保证旧实例配置和存储可读。包内容变化时提高版本并更新 `CHANGELOG.md`。保存成功以宿主响应为准，失败保留用户输入。复用第三方代码或资产时核对固定来源与分发许可。
 
+## 组件通知
+
+组件需要弹出提醒时，查阅宿主 `sdk/README.md` 的「组件通知（`notifications.send`）」及目标版本实现。启用该能力的包在清单声明 `notifications.send`，业务事件发生后通过 `host.request('notifications.send', payload)` 提交，在参数中明确选择 `channel`。隐藏试加载（`host.preview`）跳过发送。
+
+- `channel: 'windows'` 适合系统文字通知，`channel: 'island'` 适合顶部胶囊、按钮、实时倒计时和来电交互。两路在宿主设置中独立控制，默认都开启。被用户关闭的渠道返回 `suppressed`。同一事件确需发两路时，每路使用独立的请求 UUID。
+- `kind` 支持 `info`、`success`、`warning`、`error`、`reminder`、`advance-countdown`、`countdown`、`call`。常规通知提供 `title` 与可选 `body`，两种倒计时另外提供 Unix 毫秒 `targetAt`，模拟来电只提供宿主固定 `preset`。
+- 来电还需在清单声明 `notifications.call`，并由用户在宿主设置显式开启。双按钮提醒由宿主处理「打开组件」和「关闭」。
+- 每次实际业务事件生成 UUID `requestId`，同一事件重试保留原 ID 和参数。`accepted` 表示宿主或系统受理，`suppressed` 表示用户设置抑制。倒计时目标仅控制已触发通知的显示，组件关闭后仍需计时的任务使用已有宿主后台协议。
+- 用支持该接口的隔离宿主分别验证实际组件通知、所选渠道关闭时的抑制及重复请求，再填写广场最低宿主版本。
+
 ## 打包和隔离验证
 
 - **正式组件**从广场根目录运行 `python scripts/widget.py <目录>`，在 `artifacts/widgets/` 查看 ZIP、SHA-256 和发布说明。离线构建可传 `--sdk <host.js路径>`，脚本会与锁定摘要核对。
